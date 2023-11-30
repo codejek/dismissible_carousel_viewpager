@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 part 'config/dismissible_config.dart';
-
 part 'transition/page_dismissible_transition.dart';
 
 typedef ViewPagerCreatedCallback = void Function(PageController controller);
@@ -107,16 +106,6 @@ class DismissibleCarouselViewPager extends StatefulWidget {
   /// This property defaults to true and must not be null.
   final bool padEnds;
 
-  /// same as [PageController.initialPage].
-  final int initialPage;
-
-  /// same as [PageController.keepPage].
-  final bool keepPage;
-
-  /// viewport fraction of each page, default to 0.5
-  /// range, 0 < viewportFraction <= 1.0
-  final double viewportFraction;
-
   /// scale of beside pages based on selected page, default to 0.8
   /// range, 0 < [besidePageScale] <= 1.0
   /// ex: 1.0 means same size of selected page, 0.5 means 50% size of selected page
@@ -132,7 +121,10 @@ class DismissibleCarouselViewPager extends StatefulWidget {
   /// it worked when page removed
   final DismissalConfig? dismissalConfig;
 
-  DismissibleCarouselViewPager({
+  ///Page Controller
+  final PageController? pageController;
+
+  const DismissibleCarouselViewPager({
     Key? key,
     this.scrollDirection = Axis.horizontal,
     this.reverse = false,
@@ -147,14 +139,11 @@ class DismissibleCarouselViewPager extends StatefulWidget {
     this.clipBehavior = Clip.hardEdge,
     this.scrollBehavior,
     this.padEnds = true,
-    this.initialPage = 0,
-    this.keepPage = true,
-    this.viewportFraction = 0.5,
     this.besidePageScale = 0.8,
     this.dismissalConfig,
     this.onPagerCreated,
-  })  : assert(viewportFraction > 0 && viewportFraction <= 1),
-        super(key: key);
+    this.pageController,
+  }) : super(key: key);
 
   @override
   State<DismissibleCarouselViewPager> createState() =>
@@ -166,8 +155,9 @@ class _DismissibleCarouselViewPagerState
     with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
 
-  PageController? _controller;
-  PageController get controller => _controller!;
+  PageController get controller => widget.pageController!;
+
+  PageController get _controller => widget.pageController!;
 
   int? _itemCount;
 
@@ -196,17 +186,12 @@ class _DismissibleCarouselViewPagerState
     _skipAC = AnimationController(
         duration: const Duration(milliseconds: 1), vsync: this);
     _itemCount = _realItemCount;
-    _currentIndex = widget.initialPage;
+    _currentIndex = widget.pageController?.initialPage ?? 0;
     _setUpController();
     super.initState();
   }
 
   void _setUpController() {
-    _controller = PageController(
-      initialPage: widget.initialPage,
-      keepPage: widget.keepPage,
-      viewportFraction: widget.viewportFraction,
-    );
     SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
       widget.onPagerCreated?.call(_controller!);
     });
@@ -257,11 +242,7 @@ class _DismissibleCarouselViewPagerState
         }
       }
     }
-    if (widget.initialPage != oldWidget.initialPage ||
-        widget.keepPage != oldWidget.keepPage ||
-        widget.viewportFraction != oldWidget.viewportFraction) {
-      _setUpController();
-    }
+
     super.didUpdateWidget(oldWidget);
   }
 
